@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+	<!-- DispatcherServlet Context: defines this servlet's request-processing infrastructure -->
+	
+	<!-- Enables the Spring MVC @Controller programming model -->
+	<annotation-driven />
+
+	<!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources directory -->
+	<resources mapping="/resources/**" location="/resources/" />
+
+	<!-- popup창 등 tiles를 이용하지않고 JSP를 호출해야하는 경우 -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+		<beans:property name="order" value="2" />
+	</beans:bean>
+	
+	<!-- 오토 스캔 -->
+	<context:component-scan base-package="kr.spring.**.controller" /><!-- 패키지 하위 경로 폴더 전체 오토스캔 코드 -->
+	
+	<beans:bean id="tilesConfigurer"
+	   class="org.springframework.web.servlet.view.tiles3.TilesConfigurer">
+		<beans:property name="definitions">
+			<beans:list>
+				<beans:value>/WEB-INF/tiles-def/main.xml</beans:value>
+				<beans:value>/WEB-INF/tiles-def/member.xml</beans:value>
+				<beans:value>/WEB-INF/tiles-def/board.xml</beans:value>
+			</beans:list>
+		</beans:property>	
+	</beans:bean>
+	
+	<beans:bean id="viewResolver"
+	   class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<beans:property name="viewClass" 
+		   value="org.springframework.web.servlet.view.tiles3.TilesView"/>
+		<beans:property name="order" value="1"/>
+	</beans:bean>
+	
+	<!-- 파일 다운로드 -->
+	<beans:bean class="org.springframework.web.servlet.view.BeanNameViewResolver"
+	p:order="0"/><!-- 충돌나지않게 우선순위 0번으로 지정 -->
+	
+	<!-- 파일 업로드 : 바이트로 변환 후 베이터데이스 형태로 저장할거임-->
+	<beans:bean id="multipartResolver"
+	 class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	 	<beans:property name="maxUploadSize" value="52428800"/>
+	 	<beans:property name="defaultEncoding" value="UTF-8"/>
+	</beans:bean>
+	
+	<!-- messagSource 지정 -->
+	<beans:bean id="messageSource"
+	   class="org.springframework.context.support.ResourceBundleMessageSource">
+		<beans:property name="basenames">
+			<beans:list>
+				<beans:value>messages.validation</beans:value>
+			</beans:list>
+		</beans:property>	
+	</beans:bean>
+	
+	<!-- 로그인 여부 체크 : 인터셉터 등록 -->
+	<interceptors>
+		<interceptor>
+			<!-- 회원제 서비스므로 로그인 후 작업해야하는 폼들 -->
+			<mapping path="/member/myPage.do"/>
+			<mapping path="/member/update.do"/>
+			<mapping path="/member/changePassword.do"/>
+			<mapping path="/member/delete.do"/>
+			<!-- 관리자 영역1 -->
+			<mapping path="/member/admin_list.do"/>
+			<mapping path="/member/admin_update.do"/>
+			
+			<!-- 게시판 영역 부분 -->
+			<mapping path="/board/write.do"/>
+			<mapping path="/board/update.do"/>
+			<mapping path="/board/delete.do"/>
+			<beans:bean class="kr.spring.member.interceptor.LoginCheckInterceptor"/>
+		</interceptor>
+		<interceptor>
+			<!-- 관리자 영역2 -->
+			<mapping path="/member/admin_list.do"/>
+			<mapping path="/member/admin_update.do"/>
+			<beans:bean class="kr.spring.member.interceptor.AdminCheckInterceptor"/>
+		</interceptor>
+		
+		<!-- 수정/삭제할때 로그인회원번호 == 회원번호 일치(로그인한 사람과 작성자가 일치하는지)여부 하는 인터셉터 -->
+		<interceptor>
+		<mapping path="/board/update.do"/>
+		<mapping path="/board/delete.do"/>
+		<beans:bean class="kr.spring.interceptor.WriteCheckInterceptor"/>
+		</interceptor>
+	</interceptors>
+	
+	<!-- BLOB타입 이미지 표시 -->
+	<!-- 빈 생성이 되야 이미지파일 객체 호출이 가능함 -->
+	<beans:bean id="imageView" class="kr.spring.view.ImageView"/>
+	
+	<!-- 파일 다운로드 -->
+	<beans:bean id="downloadView" class="kr.spring.view.DownloadView"/>
+</beans:beans>
+
+
+
+
+

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper   
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"   
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="kr.spring.board.dao.BoardMapper"> 
+	<!-- 1. 목록 명시 : 회원 리스트 -->
+	<!-- 어노테이션을 이용할 경우 id는 MemberMapper.java에서 명시한 "인터페이스 메서드명"이 됨(동일한 메서드명id사용 필수) -->
+	<select id="selectList" parameterType="map" resultType="boardVO">
+		SELECT * FROM 
+		(SELECT a.*, rownum rnum FROM 
+			(SELECT b.board_num,
+					<!-- 1)제목:목록처리 sql에서 html태그 불허하는 코드 제시 : replace를 이용(바꾸고 또 바꿔주고) -->
+					<![CDATA[
+					REPLACE(REPLACE(b.title,'<','&lt;'),'>','&gt;') title,
+					]]>
+					b.hit,
+					b.filename,
+					b.reg_date,
+					m.id
+					FROM spboard b JOIN spmember m ON b.mem_num=m.mem_num
+					<where>
+						<if test="keyword != '' and keyfield == 1"><!-- 제목으로 검색 -->
+							b.title LIKE '%' || #{keyword} || '%'
+						</if>
+						<if test="keyword != '' and keyfield == 2"><!-- id 검색-->
+							m.id LIKE '%' || #{keyword} || '%'
+						</if>
+						<if test="keyword != '' and keyfield == 3"><!-- 내용 검색 -->
+							b.content LIKE '%' || #{keyword} || '%'
+						</if>
+						<if test="keyword != '' and keyfield == 4"><!-- 제목+내용 검색 -->
+							b.title LIKE '%' || #{keyword} || '%' or
+							b.content LIKE '%' || #{keyword} || '%'
+						</if>
+					</where>
+			 ORDER BY b.board_num DESC)a)
+		<![CDATA[
+		WHERE rnum >= #{start} AND rnum <= #{end}
+		]]>
+	</select>
+	
+	<!-- 1-1. 글 목록 : 총 레코드 수 -->
+	<select id="selectRowCount" parameterType="map" resultType="integer">
+		SELECT COUNT(*) FROM spboard b JOIN spmember m ON b.mem_num = m.mem_num
+		<where>
+			<if test="keyword != '' and keyfield == 1"><!-- 제목으로 검색 -->
+				b.title LIKE '%' || #{keyword} || '%'
+			</if>
+			<if test="keyword != '' and keyfield == 2"><!-- id 검색 -->
+				m.id LIKE '%' || #{keyword} || '%'
+			</if>
+			<if test="keyword != '' and keyfield == 3"><!-- 내용 검색 -->
+				b.content LIKE '%' || #{keyword} || '%'
+			</if>
+			<if test="keyword != '' and keyfield == 4"><!-- 제목+내용 검색 -->
+				b.title LIKE '%' || #{keyword} || '%' or
+				b.content LIKE '%' || #{keyword} || '%'
+			</if>
+		</where>
+	</select>
+	
+	<!-- 게시물 수정 -->
+	<update id="updateBoard" parameterType="boardVO">
+		UPDATE spboard SET
+			<if test="filename != ''"><!-- 파일명이 있을시 -->
+			uploadfile=#{uploadfile}, filename=#{filename},
+			</if>
+			title=#{title}, content=#{content}, ip=#{ip}, modify_date=SYSDATE
+		WHERE board_num=#{board_num}
+	</update>
+	
+	<!-- 댓글 목록 -->
+	<select resultType="boardReplyVO" parameterType="map" id="selectListReply">
+			SELECT * FROM (SELECT a.*, rownum rnum FROM (SELECT re_num, 
+<![CDATA[
+         REPLACE(REPLACE(re_content,'<','&lt;'),'>','&gt;') re_content,
+       ]]>re_date,re_mdate,board_num,mem_num,id FROM spboard_reply JOIN spmember USING(mem_num) WHERE board_num = #{board_num} ORDER BY re_num DESC)a) 
+<![CDATA[
+		WHERE rnum >= #{start} AND rnum <= #{end}
+]]>
+	</select>
+</mapper>
+
+
+
+
+
+
+
